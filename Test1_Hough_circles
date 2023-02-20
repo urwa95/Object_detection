@@ -1,0 +1,54 @@
+This code is for detecting circles and rectangles in an image using OpenCV library in Python. Here's a step-by-step explanation of the code:
+
+1.Import the necessary libraries: cv2 for OpenCV and numpy for numerical operations.
+
+import cv2
+import numpy as np
+
+2.Load the image and convert it to grayscale.
+
+img = cv2.imread('image.jpg')
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+3.Use HoughCircles to detect circles in the image.
+
+circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, dp=1, minDist=50, param1=50, param2=30, minRadius=0, maxRadius=0)
+
+The cv2.HoughCircles function takes in the grayscale image, the detection method (cv2.HOUGH_GRADIENT), the inverse ratio of the accumulator resolution to the image resolution (dp), minimum distance between detected centers (minDist), and canny edge detection threshold parameters (param1, param2) which adjust the edge detection sensitivity. The minimum and maximum radius of the circles to be detected are set to 0 by default to detect circles of any size.
+
+4.Draw circles on the image.
+
+if circles is not None:
+    circles = np.round(circles[0, :]).astype("int")
+    for (x, y, r) in circles:
+        cv2.circle(img, (x, y), r, (0, 255, 0), 2)
+        
+If any circles are detected in the image, the cv2.circle function is used to draw a circle on the image. The circle parameters are extracted from the circles array obtained from cv2.HoughCircles function.
+
+5.Apply Canny edge detection to detect edges in the image.
+
+edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+The cv2.Canny function applies Canny edge detection to the grayscale image to detect edges. The parameters 50 and 150 are the lower and upper thresholds respectively, and apertureSize=3 is the size of the Sobel kernel used for edge detection.
+
+6.Use HoughLinesP to detect line segments in the image.
+
+lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=100, minLineLength=100, maxLineGap=10)
+
+The cv2.HoughLinesP function takes in the edge-detected image, distance resolution of the accumulator in pixels (rho), angle resolution of the accumulator in radians (theta), the minimum number of intersections to detect a line (threshold), the minimum line length (minLineLength), and the maximum gap between line segments to treat them as a single line (maxLineGap).
+
+7.Draw line segments on the image.
+
+
+if lines is not None:
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+        
+If any line segments are detected in the image, the cv2.rectangle function is used to draw a rectangle around the line segment. The rectangle parameters are extracted from the lines array obtained from cv2.HoughLinesP function.
+
+8.Display the image.
+
+cv2.imshow("Image", img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
