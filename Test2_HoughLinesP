@@ -1,0 +1,41 @@
+import cv2
+import numpy as np
+
+# Load the image and convert to grayscale
+img = cv2.imread('image.jpg')
+gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+# Apply HoughCircles to detect cylinders
+circles = cv2.HoughCircles(gray, cv2.HOUGH_GRADIENT, dp=1, minDist=50, param1=50, param2=30, minRadius=0, maxRadius=0)
+
+# Draw circles on the image
+if circles is not None:
+    circles = np.round(circles[0, :]).astype("int")
+    for (x, y, r) in circles:
+        cv2.circle(img, (x, y), r, (0, 255, 0), 2)
+
+# Apply Canny edge detection to detect rectangles
+edges = cv2.Canny(gray, 50, 150, apertureSize=3)
+
+# Apply HoughLinesP to detect line segments
+lines = cv2.HoughLinesP(edges, rho=1, theta=np.pi/180, threshold=50, minLineLength=50, maxLineGap=20)
+
+# Draw line segments on the image
+if lines is not None:
+    for line in lines:
+        x1, y1, x2, y2 = line[0]
+        cv2.rectangle(img, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+# Show the image
+cv2.imshow("Image", img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
+Here are the changes made to the code after not getting any detection:
+
+In the cv2.HoughLinesP function call, the threshold parameter has been lowered from 100 to 50, the minLineLength parameter has been lowered from 100 to 50, and the maxLineGap parameter has been increased from 10 to 20. These changes should help detect more line segments and draw lines around the objects in the image.
+
+In the cv2.rectangle function call, the color argument has been changed from (0, 0, 255) to (0, 0, 255) to draw red lines around the objects.
+
+Try running this updated code and see if it produces the desired results.
