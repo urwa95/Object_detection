@@ -1,0 +1,108 @@
+1.Import necessary libraries:
+
+cv2 for reading and displaying the image and performing object detection using the YOLOv4 model
+numpy for handling arrays
+Load the COCO class labels:
+
+2.Open the coco.names file containing the names of the classes
+Read the file line by line and store the class names in a list called class_names
+Load the YOLOv4 object detector:
+
+3.Use cv2.dnn.readNet() function to load the YOLOv4 model from the weights and configuration files (yolov4.weights and yolov4.cfg, respectively) and store it in the net variable
+Set the target device for running the model:
+
+4.Use net.setPreferableBackend() and net.setPreferableTarget() functions to set the target device to the GPU (if available) for faster processing. If GPU is not available, the code falls back to using the CPU.
+Load the image:
+
+5.Use cv2.imread() function to load the input image (image.jpg) and store it in the image variable
+Get the height and width of the image using image.shape and store them in the height and width variables
+Preprocess the image:
+
+6.Use cv2.dnn.blobFromImage() function to convert the input image into a 4-dimensional blob (batch size, color channels, height, width) that the YOLOv4 model can process.
+The function takes the input image, scales the pixel values between 0 and 1, resizes the image to the input size of the YOLOv4 model (416x416), and swaps the red and blue color channels (since OpenCV reads images in the BGR format by default). The resulting blob is stored in the blob variable
+Set the net input to the blob using net.setInput() function
+Run forward pass on the network:
+
+7.Use net.forward() function to run the forward pass on the network and get the output
+The YOLOv4 model has 3 output layers, so we get the names of these layers using net.getUnconnectedOutLayersNames() function and store them in output_layers variable
+We pass the output_layers to net.forward() function to get the output from all the 3 layers. The output is stored in the layer_outputs variable
+Postprocess the output:
+
+8.For each output layer, we loop over each detection and decode the predictions.
+We check if the confidence score for the detected object is above a threshold (0.5 in this case). If it is, we extract the bounding box coordinates (x, y, width, height), the class ID, and the confidence score from the detection. We store these values in separate lists (boxes, confidences, class_ids).
+Once we have all the detections, we apply non-maximum suppression using cv2.dnn.NMSBoxes() function to remove overlapping bounding boxes with low confidence scores. The function takes the bounding boxes, confidence scores, and a threshold for the Intersection over Union (IoU) between bounding boxes as input. The resulting indices of the selected bounding boxes are stored in idxs variable.
+Draw bounding boxes and class labels on the image:
+
+9.If any bounding boxes are selected after non-maximum suppression, we loop over the indices in idxs
+
+code is as followed:
+import cv2
+import numpy as np
+
+# Load the COCO class labels
+class_names = []
+with open('C:/Users/syedah.urwah.khatoon/Downloads/coco.names', "r") as f:
+    class_names = [cname.strip() for cname in f.readlines()]
+
+# Load the trained YOLOv4 object detector
+net = cv2.dnn.readNet('C:/Users/syedah.urwah.khatoon/Downloads/yolov4.weights','C:/Users/syedah.urwah.khatoon/Desktop/yolov4.cfg')
+
+# Specify the target device as CPU or GPU
+net.setPreferableBackend(cv2.dnn.DNN_BACKEND_CUDA)
+net.setPreferableTarget(cv2.dnn.DNN_TARGET_CUDA)
+
+# Load the image and get its dimensions
+image = cv2.imread('C:/Users/syedah.urwah.khatoon/Desktop/shapes/s4.jpg')
+height, width = image.shape[:2]
+
+# Create a blob from the image and set input to the network
+blob = cv2.dnn.blobFromImage(image, 1/255.0, (416, 416), swapRB=True, crop=False)
+net.setInput(blob)
+
+# Run forward pass on the network and get output
+output_layers = net.getUnconnectedOutLayersNames()
+layer_outputs = net.forward(output_layers)
+
+# Initialize lists to store detected bounding boxes, confidences, and class IDs
+boxes = []
+confidences = []
+class_ids = []
+
+# Loop over each output layer, decode the predictions, and filter out weak detections
+for output in layer_outputs:
+    for detection in output:
+        scores = detection[5:]
+        class_id = np.argmax(scores)
+        confidence = scores[class_id]
+        if confidence > 0.5:
+            center_x = int(detection[0] * width)
+            center_y = int(detection[1] * height)
+            w = int(detection[2] * width)
+            h = int(detection[3] * height)
+            x = int(center_x - w / 2)
+            y = int(center_y - h / 2)
+            boxes.append([x, y, w, h])
+            confidences.append(float(confidence))
+            class_ids.append(class_id)
+
+# Apply non-maxima suppression to suppress overlapping boxes
+idxs = cv2.dnn.NMSBoxes(boxes, confidences, 0.5, 0.4)
+
+# Draw the final bounding boxes and class labels on the image
+if len(idxs) > 0:
+    for i in idxs.flatten():
+        x, y = boxes[i][0], boxes[i][1]
+        w, h = boxes[i][2], boxes[i][3]
+        cv2.rectangle(image, (x, y), (x+w, y+h), (0, 255, 0), 2)
+        text = f"{class_names[class_ids[i]]}: {confidences[i]:.2f}"
+        cv2.putText(image, text, (x, y-5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+# Show the final output image
+scale_percent = 15
+width = int(image.shape[1] * scale_percent / 100)
+height = int(image.shape[0] * scale_percent / 100)
+dim = (width, height)
+resized_image = cv2.resize(image, dim, interpolation = cv2.INTER_AREA)
+cv2.imshow("Object Detection", resized_image)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
